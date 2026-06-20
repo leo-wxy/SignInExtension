@@ -3,3 +3,4 @@
 *.bak
 popup/popup.js.backup
 src/background.js.bak
+dist/
