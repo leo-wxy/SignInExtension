@@ -101,6 +101,15 @@ npm test
 npm run check:manifest
 ```
 
+## 发布
+
+项目已经支持 GitHub CI 与 tag 发布：
+
+- `push main` / `pull_request` 会自动跑测试与脚本检查
+- `git push origin vX.Y.Z` 会触发打包并创建 GitHub Release
+
+完整步骤见 [RELEASE.md](/Users/wxy/Projects/signin-extension/RELEASE.md)。
+
 ## 项目结构
 
 ```text
