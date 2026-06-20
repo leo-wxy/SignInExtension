@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>签到助手</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>签到助手</h1>
+        <button id="optionsBtn" type="button" class="ghost" title="设置">⚙️</button>
+      </header>
+
+      <section class="panel">
+        <div id="taskList" class="task-list">
+          <!-- 任务列表动态生成 -->
+        </div>
+
+        <div class="actions">
+          <button id="runAllBtn" type="button">立即签到</button>
+        </div>
+
+        <p id="hint" class="hint"></p>
+      </section>
+    </main>
+    <script src="./popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>签到扩展 - 设置</title>
+    <link rel="stylesheet" href="./options.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>任务设置</h1>
+        <div class="header-actions">
+          <label class="schedule-inline">
+            <input id="autoSigninEnabled" type="checkbox" />
+            <span>每天</span>
+            <input id="autoSigninTime" type="time" value="10:00" />
+            <span>自动签到</span>
+          </label>
+          <button id="exportBtn" type="button" class="ghost" title="导出配置">📤 导出</button>
+          <button id="importBtn" type="button" class="ghost" title="导入配置">📥 导入</button>
+          <button id="runAllBtn" type="button" class="secondary">全部签到</button>
+          <button id="saveTopBtn" type="button">保存全部</button>
+        </div>
+      </header>
+
+      <section class="layout">
+        <aside class="panel task-panel">
+          <div class="panel-head">
+            <strong>任务列表</strong>
+            <span id="taskCount">0 个任务</span>
+          </div>
+          <div id="taskList" class="task-list"></div>
+          <button id="addTaskBtn" type="button" class="full secondary">新增任务</button>
+        </aside>
+
+        <section class="panel editor-panel">
+          <div class="editor-head">
+            <div>
+              <strong id="editorTitle">任务详情</strong>
+              <span id="saveState">未保存</span>
+            </div>
+            <div class="editor-head-actions">
+              <button id="runBtn" type="button" class="primary">立即签到</button>
+              <button id="openBtn" type="button" class="secondary">打开页面</button>
+              <button id="saveBtn" type="button" class="secondary">保存</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>任务名称</span>
+              <input id="taskName" type="text" placeholder="牧原签到" />
+            </label>
+
+            <label class="field">
+              <span>目标页地址</span>
+              <input id="taskUrl" type="url" placeholder="https://example.com/checkin" />
+            </label>
+
+            <label class="field">
+              <span>匹配地址</span>
+              <input id="taskMatchUrl" type="text" placeholder="https://example.com/*" />
+            </label>
+
+            <label class="field">
+              <span>点击延迟 ms</span>
+              <input id="taskClickDelay" type="number" min="0" max="30000" step="500" placeholder="3000" />
+            </label>
+
+            <div class="field compact-field">
+              <span>启用任务</span>
+              <label class="switch-row">
+                <input id="taskEnabled" type="checkbox" />
+                <span class="switch-track"></span>
+                <span>启用</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="selector-block">
+            <div class="selector-row">
+              <div>
+                <span class="selector-label">动作按钮</span>
+                <code id="actionValue" class="selector-value">未设置</code>
+              </div>
+              <button id="pickActionBtn" type="button" class="secondary">拾取</button>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>高级 selector</summary>
+            <div class="selector-block">
+              <div class="selector-row">
+                <div>
+                  <span class="selector-label">根容器</span>
+                  <code id="rootValue" class="selector-value">未设置</code>
+                </div>
+                <button id="pickRootBtn" type="button" class="secondary">拾取</button>
+              </div>
+              <div class="selector-row">
+                <div>
+                  <span class="selector-label">已签到状态</span>
+                  <code id="signedValue" class="selector-value">未设置</code>
+                </div>
+                <button id="pickSignedBtn" type="button" class="secondary">拾取</button>
+              </div>
+            </div>
+          </details>
+
+          <div class="editor-actions">
+            <button id="deleteTaskBtn" type="button" class="danger">删除任务</button>
+          </div>
+        </section>
+
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- 导出配置模态框 -->
+    <div id="exportModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>导出配置</h3>
+          <button id="closeExportModal" class="close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="hint">复制以下 JSON 配置，分享给其他人使用</p>
+          <textarea id="exportText" readonly></textarea>
+        </div>
+        <div class="modal-footer">
+          <button id="copyExportBtn" type="button">复制到剪贴板</button>
+          <button id="downloadExportBtn" type="button" class="secondary">下载 JSON 文件</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导入配置模态框 -->
+    <div id="importModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>导入配置</h3>
+          <button id="closeImportModal" class="close-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="hint">粘贴配置 JSON，或选择 JSON 文件</p>
+          <textarea id="importText" placeholder="粘贴 JSON 配置..."></textarea>
+          <div class="import-file-area">
+            <input id="importFile" type="file" accept=".json" style="display: none;" />
+            <button id="selectFileBtn" type="button" class="secondary">或选择文件</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmImportBtn" type="button">导入</button>
+          <button id="cancelImportBtn" type="button" class="secondary">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./options.js"></script>
+  </body>
+</html>

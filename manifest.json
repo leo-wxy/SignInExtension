@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "签到助手",
+  "description": "通过配置和元素拾取完成网页签到状态判断与点击。",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "签到助手",
+    "default_popup": "popup/popup.html"
+  },
+  "options_page": "options/options.html",
+  "permissions": [
+    "activeTab",
+    "alarms",
+    "contextMenus",
+    "notifications",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/shared/rules.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

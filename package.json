@@ -1,0 +1,11 @@
+{
+  "name": "signin-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configurable Chrome MV3 extension for page sign-in automation.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check:manifest": "node --check src/background.js && node --check src/content.js && node --check popup/popup.js && node --check options/options.js"
+  },
+  "license": "UNLICENSED"
+}
