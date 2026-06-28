@@ -122,6 +122,9 @@ function init() {
   els.runBtn.addEventListener('click', runTask);
   els.runAllBtn.addEventListener('click', runAllTasks);
   els.openBtn.addEventListener('click', openTask);
+  document.getElementById('historyBtn')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options/history.html') });
+  });
   chrome.runtime?.onMessage?.addListener(handleRuntimeMessage);
 
   loadState();
@@ -616,7 +619,7 @@ function showToast(text, kind = 'info') {
 async function loadScheduleSettings() {
   try {
     const storage = await storageGet(['autoSigninEnabled', 'autoSigninTime']);
-    els.autoSigninEnabled.checked = storage.autoSigninEnabled !== false; // 默认启用
+    els.autoSigninEnabled.checked = storage.autoSigninEnabled === true;
     els.autoSigninTime.value = storage.autoSigninTime || '10:00';
   } catch (error) {
     console.error('[Options] 加载定时设置失败:', error);
@@ -636,7 +639,6 @@ async function saveSchedule() {
     // 通知 background 重新设置定时器
     chrome.runtime.sendMessage({ type: 'UPDATE_SCHEDULE' });
 
-    console.log(`[Options] 定时签到已保存: ${enabled ? '启用' : '禁用'}, ${time}`);
   } catch (error) {
     console.error('[Options] 保存定时设置失败:', error);
   }
@@ -665,7 +667,7 @@ async function showExportModal() {
     const config = {
       tasks: simplifiedTasks,
       autoSignin: {
-        enabled: storage.autoSigninEnabled !== false,
+        enabled: storage.autoSigninEnabled === true,
         time: storage.autoSigninTime || '10:00'
       }
     };

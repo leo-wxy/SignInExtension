@@ -2,28 +2,29 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>签到助手</title>
     <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
     <main class="app">
-      <header class="header">
-        <h1>签到助手</h1>
-        <button id="optionsBtn" type="button" class="ghost" title="设置">⚙️</button>
-      </header>
-
-      <section class="panel">
-        <div id="taskList" class="task-list">
-          <!-- 任务列表动态生成 -->
+      <div class="toolbar">
+        <span class="app-title">签到助手</span>
+        <div class="toolbar-actions">
+          <button id="optionsBtn" type="button" class="icon-btn" title="设置">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.5 1h3l.5 1.5 1.2-.4 1.5 1.5-.4 1.2L14 5.5v3l-1.7.3.4 1.2-1.5 1.5-1.2-.4L9.5 13h-3l-.3-1.7-1.2.4-1.5-1.5.4-1.2L2 8.5v-3l1.7-.3-.4-1.2 1.5-1.5 1.2.4L6.5 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+          </button>
         </div>
+      </div>
 
-        <div class="actions">
-          <button id="runAllBtn" type="button">立即签到</button>
-        </div>
+      <div id="taskList" class="task-list"></div>
 
+      <div class="footer">
+        <button id="runAllBtn" type="button" class="run-btn">立即签到</button>
         <p id="hint" class="hint"></p>
-      </section>
+      </div>
     </main>
     <script src="./popup.js"></script>
   </body>

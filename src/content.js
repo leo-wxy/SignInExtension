@@ -15,16 +15,13 @@
     PICKER_RESULT: 'PICKER_RESULT',
     PICKER_CANCELLED: 'PICKER_CANCELLED',
     QUICK_PICK_ELEMENT: 'QUICK_PICK_ELEMENT',
-    SHOW_PICK_RESULT: 'SHOW_PICK_RESULT',
-    SHOW_POPUP: 'SHOW_POPUP',
-    HIDE_POPUP: 'HIDE_POPUP'
+    SHOW_PICK_RESULT: 'SHOW_PICK_RESULT'
   };
 
   const PICKER_OVERLAY_ID = '__signin_picker_overlay__';
   const PICKER_LABEL_ID = '__signin_picker_label__';
   const PICKER_CAPTURE_ID = '__signin_picker_capture__';
   const PICKER_PANEL_ID = '__signin_picker_panel__';
-  const POPUP_ID = '__signin_popup__';
   const PICKER_STATE = {
     active: false,
     hoveredElement: null,
@@ -37,6 +34,7 @@
   };
   let pendingPickedElement = null;
   let pendingPickContext = null;
+  let lastContextElement = null;
 
   function getRules() {
     const ruleHost = window.SigninRules || globalThis.SigninRules;
@@ -481,171 +479,6 @@
     });
   }
 
-  function showPopup(data) {
-    console.log('[Signin Extension] showPopup 被调用，数据:', data);
-    removePopup();
-
-    const popup = document.createElement('div');
-    popup.id = POPUP_ID;
-    console.log('[Signin Extension] 创建浮窗元素，ID:', POPUP_ID);
-    Object.assign(popup.style, {
-      position: 'fixed',
-      right: '24px',
-      bottom: '24px',
-      zIndex: '2147483647',
-      width: '360px',
-      maxWidth: 'calc(100vw - 48px)',
-      border: '1px solid #b7b7c4',
-      borderRadius: '12px',
-      background: '#ffffff',
-      color: '#201936',
-      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
-      font: '14px/1.45 -apple-system, BlinkMacSystemFont, sans-serif',
-      overflow: 'hidden'
-    });
-
-    // 头部
-    const header = document.createElement('div');
-    Object.assign(header.style, {
-      padding: '16px',
-      borderBottom: '1px solid #e5e5ea',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      background: '#f9f9fb'
-    });
-
-    const title = document.createElement('h3');
-    title.textContent = '签到助手';
-    Object.assign(title.style, {
-      margin: '0',
-      fontSize: '16px',
-      fontWeight: '700',
-      color: '#201936'
-    });
-
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    closeBtn.type = 'button';
-    Object.assign(closeBtn.style, {
-      border: 'none',
-      background: 'transparent',
-      color: '#8e8e93',
-      fontSize: '20px',
-      cursor: 'pointer',
-      padding: '0',
-      width: '24px',
-      height: '24px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    });
-    closeBtn.addEventListener('click', removePopup);
-
-    header.append(title, closeBtn);
-
-    // 内容区域
-    const body = document.createElement('div');
-    Object.assign(body.style, {
-      padding: '16px',
-      maxHeight: '400px',
-      overflowY: 'auto'
-    });
-
-    // 任务信息
-    const taskName = document.createElement('div');
-    taskName.textContent = data.taskName || '暂无任务';
-    Object.assign(taskName.style, {
-      fontSize: '15px',
-      fontWeight: '600',
-      marginBottom: '12px',
-      color: '#201936'
-    });
-
-    const status = document.createElement('div');
-    status.textContent = `状态: ${data.status || '未知'}`;
-    Object.assign(status.style, {
-      fontSize: '14px',
-      color: '#6e6e73',
-      marginBottom: '8px'
-    });
-
-    const url = document.createElement('div');
-    url.textContent = `地址: ${data.url || '未配置'}`;
-    Object.assign(url.style, {
-      fontSize: '13px',
-      color: '#8e8e93',
-      marginBottom: '16px',
-      wordBreak: 'break-all'
-    });
-
-    body.append(taskName, status, url);
-
-    // 操作按钮
-    const actions = document.createElement('div');
-    Object.assign(actions.style, {
-      padding: '12px 16px',
-      borderTop: '1px solid #e5e5ea',
-      display: 'flex',
-      gap: '8px',
-      background: '#f9f9fb'
-    });
-
-    const runBtn = document.createElement('button');
-    runBtn.textContent = '立即签到';
-    runBtn.type = 'button';
-    Object.assign(runBtn.style, {
-      flex: '1',
-      minHeight: '40px',
-      border: 'none',
-      borderRadius: '8px',
-      background: '#2563eb',
-      color: '#ffffff',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer'
-    });
-    runBtn.addEventListener('click', async () => {
-      showToast('正在执行签到...', 'info');
-      const result = await notifyExtension({ type: MESSAGE_TYPES.RUN_TASK, task: data.task });
-      if (result.ok) {
-        showToast('签到完成', 'success');
-      } else {
-        showToast('签到失败', 'error');
-      }
-    });
-
-    const openBtn = document.createElement('button');
-    openBtn.textContent = '打开页面';
-    openBtn.type = 'button';
-    Object.assign(openBtn.style, {
-      flex: '1',
-      minHeight: '40px',
-      border: '1px solid #d1d1d6',
-      borderRadius: '8px',
-      background: '#ffffff',
-      color: '#201936',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer'
-    });
-    openBtn.addEventListener('click', () => {
-      notifyExtension({ type: MESSAGE_TYPES.OPEN_TASK, task: data.task });
-      removePopup();
-    });
-
-    actions.append(runBtn, openBtn);
-
-    popup.append(header, body, actions);
-    document.documentElement.appendChild(popup);
-
-    return popup;
-  }
-
-  function removePopup() {
-    document.getElementById(POPUP_ID)?.remove();
-  }
-
   function createButton(text, variant) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -661,40 +494,6 @@
       cursor: 'pointer'
     });
     return button;
-  }
-
-  function getPanelPosition(anchorRect, panelWidth, panelHeight) {
-    const gap = 10;
-    const margin = 10;
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    const positions = [
-      { left: anchorRect.right + gap, top: Math.max(margin, anchorRect.top) },
-      { left: anchorRect.left - panelWidth - gap, top: Math.max(margin, anchorRect.top) },
-      { left: Math.max(margin, anchorRect.left), top: anchorRect.bottom + gap },
-      { left: Math.max(margin, anchorRect.left), top: anchorRect.top - panelHeight - gap }
-    ];
-
-    const fitted = positions.find((position) => (
-      position.left >= margin &&
-      position.top >= margin &&
-      position.left + panelWidth <= viewportWidth - margin &&
-      position.top + panelHeight <= viewportHeight - margin
-    ));
-    const position = fitted || positions[0];
-
-    return {
-      left: Math.min(Math.max(margin, position.left), Math.max(margin, viewportWidth - panelWidth - margin)),
-      top: Math.min(Math.max(margin, position.top), Math.max(margin, viewportHeight - panelHeight - margin))
-    };
-  }
-
-  function placeConfirmPanel(panel, anchorRect) {
-    // 固定在右下角，不根据元素位置调整
-    panel.style.removeProperty('left');
-    panel.style.removeProperty('top');
-    panel.style.right = '24px';
-    panel.style.bottom = '24px';
   }
 
   function showConfirmPanel(picked, context = {}) {
@@ -924,6 +723,12 @@
   }
 
   async function handleQuickPickElement(targetKey, mode, taskId) {
+    if (lastContextElement && document.documentElement.contains(lastContextElement)) {
+      const picked = buildPickedElementInfo(lastContextElement);
+      picked.rect = lastContextElement.getBoundingClientRect();
+      showConfirmPanel(picked, { targetKey, mode, taskId });
+      return { confirming: true };
+    }
     showToast('请在页面上左键点击签到按钮', 'info');
     return startPicker(null, null, targetKey, mode, taskId);
   }
@@ -956,13 +761,6 @@
           return handleQuickPickElement(message.targetKey, message.mode, message.taskId);
         case MESSAGE_TYPES.SHOW_PICK_RESULT:
           return handleShowPickResult(message);
-        case MESSAGE_TYPES.SHOW_POPUP:
-          console.log('[Signin Extension] 收到 SHOW_POPUP 消息:', message.data);
-          showPopup(message.data || {});
-          return { ok: true };
-        case MESSAGE_TYPES.HIDE_POPUP:
-          removePopup();
-          return { ok: true };
         default:
           return null;
       }
@@ -984,6 +782,12 @@
   };
 
   chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+
+  document.addEventListener('contextmenu', (event) => {
+    if (event.target instanceof Element) {
+      lastContextElement = event.target;
+    }
+  }, true);
 
   window.__signinContentScriptCleanup = () => {
     teardownPicker();

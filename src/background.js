@@ -7,9 +7,7 @@ const MESSAGE_TYPES = {
   QUICK_PICK_ELEMENT: 'QUICK_PICK_ELEMENT',
   SHOW_PICK_RESULT: 'SHOW_PICK_RESULT',
   PICKER_RESULT: 'PICKER_RESULT',
-  PICKER_CANCELLED: 'PICKER_CANCELLED',
-  SHOW_POPUP: 'SHOW_POPUP',
-  HIDE_POPUP: 'HIDE_POPUP'
+  PICKER_CANCELLED: 'PICKER_CANCELLED'
 };
 
 const HOME_PAGE = chrome.runtime.getURL('options/options.html');
@@ -236,7 +234,7 @@ function getNotificationTitle(status, taskName) {
 }
 
 async function showBrowserNotification(task, result) {
-  if (!chrome.notifications?.create || !result?.message) {
+  if (!chrome.notifications?.create || !result?.status) {
     return;
   }
 
@@ -247,7 +245,7 @@ async function showBrowserNotification(task, result) {
         type: 'basic',
         iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLlVAAAAx0lEQVR4Ae3XQQrCMBQF0XfQe1P3P6Vh3YhQKfRpyR2S3gT0p3QkqT8J9yRzM0Q9M8y8j2Qn3o7gH1oG6D2QK8A0M2s1mE4r9J2aJ3m5d8m2H2c6gAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAqgAo4AByd2W8Q4Fq1QAAAABJRU5ErkJggg==',
         title: getNotificationTitle(result.status, task?.name),
-        message: result.message,
+        message: result.message || formatResultMessage(result.status, ''),
         priority: 2
       },
       () => {
@@ -510,13 +508,24 @@ async function saveLastResult(task, result) {
     ? existing
     : {};
 
+  const newStatus = result?.result?.status || result?.status || (result?.ok ? 'ok' : 'error');
+
+  // 今天已签到成功，不被错误结果覆盖
+  const prev = lastResults[taskId];
+  if (prev && isSuccessStatus(prev.status) && isFailureStatus(newStatus)) {
+    const prevDate = new Date(prev.time).toDateString();
+    if (prevDate === new Date().toDateString()) {
+      return prev;
+    }
+  }
+
   lastResults[taskId] = {
     taskId,
     taskName: task.name || '',
     url: task.url || '',
-    status: result?.result?.status || result?.status || (result?.ok ? 'ok' : 'error'),
+    status: newStatus,
     message: formatResultMessage(
-      result?.result?.status || result?.status || (result?.ok ? 'ok' : 'error'),
+      newStatus,
       result?.result?.reason || result?.reason || result?.error || ''
     ),
     detail: result,
@@ -770,11 +779,10 @@ async function setupDailyAlarm() {
   try {
     // 获取用户配置的时间
     const storage = await storageGet(['autoSigninTime', 'autoSigninEnabled']);
-    const enabled = storage.autoSigninEnabled !== false; // 默认启用
+    const enabled = storage.autoSigninEnabled === true;
     const timeStr = storage.autoSigninTime || '10:00'; // 默认10:00
 
     if (!enabled) {
-      console.log('[Background] 自动签到已禁用');
       chrome.alarms.clear('daily-signin');
       return;
     }
@@ -796,14 +804,12 @@ async function setupDailyAlarm() {
       periodInMinutes: 24 * 60 // 每24小时重复
     });
 
-    console.log(`[Background] 定时签到已设置: ${timeStr}，下次触发时间:`, scheduledTime);
   } catch (error) {
     console.error('[Background] 设置定时器失败:', error);
   }
 }
 
 async function handleDailySignin() {
-  console.log('[Background] 开始执行定时签到');
 
   try {
     const storage = await storageGet([STORAGE_KEYS.tasks]);
@@ -811,7 +817,6 @@ async function handleDailySignin() {
     const enabledTasks = tasks.filter(t => t.enabled !== false);
 
     if (!enabledTasks.length) {
-      console.log('[Background] 没有启用的任务');
       return;
     }
 
@@ -823,17 +828,16 @@ async function handleDailySignin() {
 }
 
 async function handleRunAllTasks(tasks) {
-  console.log('[Background] 批量签到开始，任务数:', tasks.length);
-
   if (!tasks || !tasks.length) {
     return { ok: false, error: '没有任务' };
   }
 
   // 在后台异步执行，立即返回响应
   (async () => {
+    const [activeTab] = await queryTabs({ active: true, currentWindow: true }).catch(() => [null]);
+
     for (let i = 0; i < tasks.length; i++) {
       const task = normalizeTask(tasks[i]);
-      console.log(`[Background] [${i + 1}/${tasks.length}] 执行任务: ${task.name}`);
 
       let targetTab = null;
       let isNewTab = false;
@@ -847,7 +851,6 @@ async function handleRunAllTasks(tasks) {
         if (!targetTab) {
           // 打开新页面
           isNewTab = true;
-          console.log(`[Background] 打开新标签页: ${task.url}`);
           targetTab = await createTab({ url: task.url, active: false });
           await waitForTabLoad(targetTab.id);
         }
@@ -862,16 +865,13 @@ async function handleRunAllTasks(tasks) {
         showTaskBadge(targetTab.id, lastResult);
         await showTaskResultToast(targetTab.id, lastResult);
         await showBrowserNotification(task, lastResult);
-        console.log(`[Background] 任务 ${task.name} 完成:`, response);
 
         // 如果是新打开的标签页，等待3秒后关闭
         if (isNewTab && targetTab?.id) {
-          console.log(`[Background] 等待3秒后关闭标签页 ${targetTab.id}`);
           await new Promise(resolve => setTimeout(resolve, 3000));
 
           try {
             await chrome.tabs.remove(targetTab.id);
-            console.log(`[Background] ✓ 已关闭标签页: ${targetTab.id}`);
           } catch (e) {
             console.error(`[Background] ✗ 关闭标签页失败:`, e);
           }
@@ -902,7 +902,10 @@ async function handleRunAllTasks(tasks) {
       }
     }
 
-    console.log('[Background] 所有任务执行完成');
+    // 切回原来的标签页
+    if (activeTab?.id) {
+      updateTab(activeTab.id, { active: true }).catch(() => {});
+    }
   })();
 
   return { ok: true, message: '批量签到已启动' };
@@ -958,7 +961,6 @@ if (isChromeApiReady()) {
   // 监听定时器触发
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'daily-signin') {
-      console.log('[Background] 定时签到触发');
       handleDailySignin();
     }
   });
@@ -990,92 +992,6 @@ if (isChromeApiReady()) {
       });
     });
   }
-
-  //   chrome.action.onClicked.addListener(async (tab) => {
-  //     console.log('[Signin Extension] 一键签到开始, tab:', tab.id);
-  // 
-  //     try {
-  //       // 获取所有任务
-  //       const tasks = await getStoredTasks();
-  //       if (!tasks || tasks.length === 0) {
-  //         console.log('[Signin Extension] 没有配置任务，打开设置页');
-  //         await chrome.action.setBadgeText({ text: '?' });
-  //         await chrome.action.setBadgeBackgroundColor({ color: '#f59e0b' });
-  //         setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000);
-  //         openExtensionPage(HOME_PAGE).catch(() => {});
-  //         return;
-  //       }
-  // 
-  //       // 只处理第一个任务（未来可以扩展为处理所有任务）
-  //       const task = tasks[0];
-  //       console.log('[Signin Extension] 执行任务:', task.name);
-  // 
-  //       // 判断是否需要打开新页面
-  //       const currentUrl = tab.url || '';
-  //       const needNewTab = !currentUrl.startsWith(task.url) && !currentUrl.match(task.matchUrl);
-  // 
-  //       if (needNewTab) {
-  //         // 打开任务页面并执行签到
-  //         console.log('[Signin Extension] 打开新页面:', task.url);
-  //         const newTab = await chrome.tabs.create({ url: task.url, active: true });
-  // 
-  //         // 等待页面加载完成
-  //         await new Promise((resolve) => {
-  //           const listener = (tabId, info) => {
-  //             if (tabId === newTab.id && info.status === 'complete') {
-  //               chrome.tabs.onUpdated.removeListener(listener);
-  //               resolve();
-  //             }
-  //           };
-  //           chrome.tabs.onUpdated.addListener(listener);
-  //         });
-  // 
-  //         // 执行签到
-  //         const result = await sendTaskMessage(newTab.id, {
-  //           type: MESSAGE_TYPES.RUN_TASK,
-  //           task
-  //         });
-  // 
-  //         console.log('[Signin Extension] 签到结果:', result);
-  // 
-  //         // 显示结果 Badge
-  //         if (result?.result?.status === 'signed' || result?.result?.status === 'clicked') {
-  //           await chrome.action.setBadgeText({ text: '✓' });
-  //           await chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
-  // 
-  //           // 签到成功，3秒后自动关闭页面
-  //           setTimeout(async () => {
-  //             await chrome.tabs.remove(newTab.id);
-  //             await chrome.action.setBadgeText({ text: '' });
-  //           }, 3000);
-  //         } else {
-  //           await chrome.action.setBadgeText({ text: '✗' });
-  //           await chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
-  //           setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000);
-  //         }
-  //       } else {
-  //         // 当前页面就是任务页面，直接执行
-  //         console.log('[Signin Extension] 在当前页面执行签到');
-  //         const result = await sendTaskMessage(tab.id, {
-  //           type: MESSAGE_TYPES.RUN_TASK,
-  //           task
-  //         });
-  // 
-  //         console.log('[Signin Extension] 签到结果:', result);
-  // 
-  //         if (result?.result?.status === 'signed' || result?.result?.status === 'clicked') {
-  //           await chrome.action.setBadgeText({ text: '✓' });
-  //           await chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
-  //         } else {
-  //           await chrome.action.setBadgeText({ text: '✗' });
-  //           await chrome.action.setBadgeBackgroundColor({ color: '#ef4444' });
-  //         }
-  //         setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000);
-  //       }
-  // 
-  //     } catch (error) {
-  // chrome.action.onClicked 已禁用（使用 default_popup）
-  // 如需启用一键签到，移除 manifest.json 中的 default_popup
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleRuntimeMessage(message, sender)

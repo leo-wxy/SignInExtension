@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>签到历史</title>
+    <link rel="stylesheet" href="./options.css" />
+    <style>
+      .history-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .history-table th,
+      .history-table td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .history-table th {
+        color: var(--muted);
+        font-weight: 620;
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+      }
+      .history-table td:last-child {
+        white-space: nowrap;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .status-badge[data-kind="success"] { color: var(--accent); }
+      .status-badge[data-kind="error"]   { color: var(--danger); }
+      .status-badge[data-kind="info"]    { color: var(--accent-2); }
+      .back-btn { margin-bottom: 16px; }
+      .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>签到历史</h1>
+        <button id="backBtn" type="button" class="secondary">← 返回设置</button>
+      </header>
+      <div class="table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>任务</th>
+              <th>状态</th>
+              <th>详情</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="4" style="color: var(--muted); text-align: center; padding: 24px;">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+    <script src="./history.js"></script>
+  </body>
+</html>

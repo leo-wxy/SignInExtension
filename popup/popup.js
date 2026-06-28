@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function init() {
-  console.log('[Popup] 开始初始化');
 
   try {
     els.taskList = document.getElementById('taskList');
@@ -25,10 +24,8 @@ function init() {
     els.runAllBtn = document.getElementById('runAllBtn');
     els.optionsBtn = document.getElementById('optionsBtn');
 
-    console.log('[Popup] DOM 元素已找到');
 
     els.runAllBtn.addEventListener('click', () => {
-      console.log('[Popup] runAllBtn 被点击');
       runAllTasks().catch((err) => {
         console.error('[Popup] runAllTasks 顶层错误:', err);
         setHint('执行出错: ' + err.message);
@@ -39,7 +36,6 @@ function init() {
     els.optionsBtn.addEventListener('click', openOptions);
     chrome.storage?.onChanged?.addListener(handleStorageChanged);
 
-    console.log('[Popup] 事件监听器已绑定');
 
     loadState();
   } catch (error) {
@@ -49,18 +45,15 @@ function init() {
 }
 
 async function loadState() {
-  console.log('[Popup] 开始加载状态');
 
   try {
     setHint('正在读取任务列表...');
     toggleBusy(true);
 
     const storage = await storageGet(STORAGE_KEYS);
-    console.log('[Popup] storage 数据:', storage);
 
     const tasks = normalizeTasks(storage.tasks);
     const lastResults = normalizeLastResults(storage.lastResults);
-    console.log('[Popup] 任务数:', tasks.length);
 
     state.tasks = tasks;
     state.lastResults = lastResults;
@@ -94,37 +87,35 @@ function renderTaskList() {
     const item = document.createElement('div');
     item.className = 'task-item';
 
-    const info = document.createElement('div');
-    info.className = 'task-info';
+    const left = document.createElement('div');
+    left.style.cssText = 'min-width:0;flex:1';
 
     const name = document.createElement('div');
     name.className = 'task-name';
     name.textContent = task.name || '未命名任务';
 
-    const status = document.createElement('div');
-    status.className = 'task-status';
-    status.textContent = describeTaskState(task, result);
-    status.dataset.kind = getResultKind(result);
+    left.appendChild(name);
 
-    info.append(name, status);
-
-    if (result?.message) {
-      const detail = document.createElement('div');
-      detail.className = 'task-detail';
-      detail.textContent = result.message;
-      info.appendChild(detail);
+    if (result?.time) {
+      const meta = document.createElement('div');
+      meta.className = 'task-meta';
+      meta.textContent = formatTime(result.time);
+      left.appendChild(meta);
     }
 
-    item.append(info);
+    const badge = document.createElement('span');
+    badge.className = 'task-badge';
+    badge.dataset.kind = getResultKind(result);
+    badge.textContent = describeTaskState(task, result);
+
+    item.append(left, badge);
     els.taskList.appendChild(item);
   });
 }
 
 async function runAllTasks() {
-  console.log('[Popup] runAllTasks 开始');
 
   const tasks = state.tasks.filter(t => t.enabled !== false);
-  console.log('[Popup] 过滤后的任务数:', tasks.length);
 
   if (!tasks.length) {
     setHint('没有可执行的任务');
@@ -141,7 +132,6 @@ async function runAllTasks() {
       tasks
     });
 
-    console.log('[Popup] 批量签到响应:', response);
 
     if (response?.ok) {
       setHint('签到已开始，结果会自动刷新');
@@ -164,12 +154,7 @@ function openOptions() {
 }
 
 function findLastResult(task) {
-  if (!state.lastResults.length) return null;
-  return (
-    state.lastResults.find((item) => matchResultTask(item, task)) ||
-    state.lastResults[0] ||
-    null
-  );
+  return state.lastResults.find((item) => matchResultTask(item, task)) || null;
 }
 
 function matchResultTask(result, task) {
@@ -250,6 +235,12 @@ function normalizeLastResults(value) {
     }));
   }
   return [];
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function matchesUrl(url, pattern) {
